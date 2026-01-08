@@ -9,8 +9,8 @@ interface CostRow {
   name: string;
   team: string;
   category: string;
-  dateRange: string;  // ⭐ 추가
-  orderCount: number; // ⭐ 추가
+  dateRange: string;  // (데이터에는 있지만 화면엔 표시 안 함)
+  orderCount: number; 
   q: number;
   mat_raw: number;
   mat_sub: number;
@@ -139,12 +139,13 @@ export default function Home() {
     return { rows, totals };
   }, [data, selectedCodes, isModalOpen]);
 
-  // CSV 다운로드 (모든 컬럼 포함)
+  // CSV 다운로드 (수정됨: 실적일 제거, 생산횟수 포맷 변경)
   const downloadCSV = () => {
     if (modalData.rows.length === 0) return;
     let csvContent = "\uFEFF";
-    // ⭐ 헤더: 구글 시트 순서 + 누적비중
-    csvContent += "순위,제품코드,제품명,생산실적(Q),누적비중(%),실적일(기간),오더번호(건수),팀,카테고리,원자재,부자재,포장재,자소소재,재료비합계,감가상각비,직접노무비,간접노무비,유틸리티,기타경비,가공비합계,제조원가\n";
+    
+    // 헤더 수정: 실적일 제거, 오더번호 -> 생산횟수
+    csvContent += "순위,제품코드,제품명,생산실적(Q),누적비중(%),생산횟수,팀,카테고리,원자재,부자재,포장재,자소소재,재료비합계,감가상각비,직접노무비,간접노무비,유틸리티,기타경비,가공비합계,제조원가\n";
 
     modalData.rows.forEach((row, index) => {
       const line = [
@@ -153,8 +154,7 @@ export default function Home() {
         `"${row.name.replace(/"/g, '""')}"`,
         row.q,
         row.cumulativeRatio.toFixed(2) + '%',
-        `"${row.dateRange}"`,          // 실적일
-        `"${row.orderCount}건 합산"`,   // 오더번호
+        `"${row.orderCount}회"`, // 수정됨: X회
         row.team,
         row.category,
         row.mat_raw,
@@ -174,7 +174,7 @@ export default function Home() {
     });
 
     // 합계 행
-    csvContent += `TOTAL,,,${modalData.totals?.q},,,,,,,,,,${modalData.totals?.mat_total},,,,,,,${modalData.totals?.process_total},${modalData.totals?.total_cost}\n`;
+    csvContent += `TOTAL,,,${modalData.totals?.q},,${modalData.totals?.orderCount || ''}회,,,,,${modalData.totals?.mat_total},,,,,,,${modalData.totals?.process_total},${modalData.totals?.total_cost}\n`;
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -237,7 +237,7 @@ export default function Home() {
           </div>
         </div>
         
-        {/* ⭐ 메인 테이블 (모든 컬럼 표시) */}
+        {/* ⭐ 메인 테이블 (수정됨: 컬럼 변경) */}
         <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-[70vh]">
           <table className="w-full text-xs text-left text-gray-600 whitespace-nowrap">
             <thead className="text-xs text-gray-700 uppercase bg-gray-100 font-bold sticky top-0 z-20 shadow-sm">
@@ -252,9 +252,8 @@ export default function Home() {
                 <th className="px-4 py-3 text-right bg-blue-50 text-blue-900 border-l border-blue-100">생산실적</th>
                 <th className="px-4 py-3 text-right bg-orange-50 text-orange-900 border-r border-orange-100">누적비중</th>
                 
-                {/* ⭐ 추가된 컬럼들 */}
-                <th className="px-4 py-3 text-gray-500">실적일(기간)</th>
-                <th className="px-4 py-3 text-gray-500">오더번호(건수)</th>
+                {/* [수정] 실적일 삭제, 오더번호 -> 생산횟수 */}
+                <th className="px-4 py-3 text-gray-500 text-center">생산횟수</th>
                 
                 <th className="px-4 py-3">팀</th>
                 <th className="px-4 py-3">카테고리</th>
@@ -289,9 +288,8 @@ export default function Home() {
                       <div className="absolute bottom-0 left-0 h-1 bg-orange-200" style={{ width: `${row.cumulativeRatio}%`, opacity: 0.3 }}></div>{row.cumulativeRatio.toFixed(1)}%
                     </td>
                     
-                    {/* 기간 및 건수 표시 */}
-                    <td className="px-4 py-3 text-gray-400 text-[11px]">{row.dateRange}</td>
-                    <td className="px-4 py-3 text-gray-400 text-[11px]">{row.orderCount}건 합산</td>
+                    {/* [수정] 실적일 삭제, 생산횟수로 포맷 변경 */}
+                    <td className="px-4 py-3 text-gray-500 text-center text-xs">{row.orderCount}회</td>
                     
                     <td className="px-4 py-3 text-gray-500">{row.team}</td>
                     <td className="px-4 py-3 text-gray-500">{row.category}</td>
